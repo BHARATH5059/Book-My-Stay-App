@@ -40,7 +40,7 @@ class BookingQueue {
     }
 }
 
-public class Book_my_stay {
+public class UseCase5BookingRequestQueue {
     public static void main(String[] args) {
 
         System.out.println("Welcome to Book My Stay - Hotel Booking System v5.0\n");
