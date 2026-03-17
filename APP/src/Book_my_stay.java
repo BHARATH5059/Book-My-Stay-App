@@ -28,8 +28,8 @@ class RoomInventory {
 
 /**
  * Hotel Booking Management System - Inventory Setup
- *
- * @author
+ * 
+ * @author 
  * @version 3.1
  */
 public class Book_my_stay {
