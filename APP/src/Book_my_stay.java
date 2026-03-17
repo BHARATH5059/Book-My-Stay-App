@@ -83,7 +83,7 @@ class RoomSearchService {
     }
 }
 
-public class Book_my_stay {
+public class UseCase4RoomSearch {
     public static void main(String[] args) {
 
         System.out.println("Welcome to Book My Stay - Hotel Booking System v4.0\n");
