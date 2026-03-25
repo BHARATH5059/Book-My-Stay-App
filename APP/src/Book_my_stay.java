@@ -1,101 +1,220 @@
 import java.util.*;
 
+// Reservation class
 class Reservation {
+    private String reservationId;
     private String guestName;
     private String roomType;
+    private boolean isCancelled;
 
-    public Reservation(String guestName, String roomType) {
+    public Reservation(String reservationId, String guestName, String roomType) {
+        this.reservationId = reservationId;
         this.guestName = guestName;
         this.roomType = roomType;
+        this.isCancelled = false;
     }
 
-    public String getGuestName() {
-        return guestName;
+    public String getReservationId() {
+        return reservationId;
     }
 
     public String getRoomType() {
         return roomType;
     }
-}
 
-class BookingQueue {
-    private Queue<Reservation> queue = new LinkedList<>();
-
-    public void addRequest(Reservation r) {
-        queue.offer(r);
+    public boolean isCancelled() {
+        return isCancelled;
     }
 
-    public Reservation getNextRequest() {
-        return queue.poll();
+    public void cancel() {
+        this.isCancelled = true;
     }
 
-    public boolean isEmpty() {
-        return queue.isEmpty();
-    }
-}
-
-class RoomInventory {
-    private Map<String, Integer> inventory = new HashMap<>();
-
-    public RoomInventory() {
-        inventory.put("Single Room", 2);
-        inventory.put("Double Room", 1);
-        inventory.put("Suite Room", 1);
-    }
-
-    public int getAvailability(String type) {
-        return inventory.getOrDefault(type, 0);
-    }
-
-    public void decrement(String type) {
-        inventory.put(type, inventory.get(type) - 1);
+    @Override
+    public String toString() {
+        return "Reservation ID: " + reservationId +
+                ", Guest: " + guestName +
+                ", Room: " + roomType +
+                ", Status: " + (isCancelled ? "Cancelled" : "Confirmed");
     }
 }
 
-class BookingService {
-    private RoomInventory inventory;
-    private Map<String, Set<String>> allocatedRooms = new HashMap<>();
-    private int idCounter = 1;
+// Inventory Manager
+class InventoryManager {
 
-    public BookingService(RoomInventory inventory) {
-        this.inventory = inventory;
+    private Map<String, Integer> inventory;
+
+    public InventoryManager() {
+        inventory = new HashMap<>();
+        inventory.put("Single", 2);
+        inventory.put("Double", 2);
+        inventory.put("Suite", 1);
     }
 
-    public void process(BookingQueue queue) {
-        while (!queue.isEmpty()) {
-            Reservation r = queue.getNextRequest();
-            String type = r.getRoomType();
+    public boolean isAvailable(String roomType) {
+        return inventory.containsKey(roomType) && inventory.get(roomType) > 0;
+    }
 
-            if (inventory.getAvailability(type) > 0) {
-                String roomId = type.replaceAll("\\s+", "").toUpperCase() + "_" + idCounter++;
-                allocatedRooms.putIfAbsent(type, new HashSet<>());
+    public void allocate(String roomType) {
+        inventory.put(roomType, inventory.get(roomType) - 1);
+    }
 
-                if (!allocatedRooms.get(type).contains(roomId)) {
-                    allocatedRooms.get(type).add(roomId);
-                    inventory.decrement(type);
-                    System.out.println("Booking Confirmed: " + r.getGuestName() + " -> " + roomId);
-                }
-            } else {
-                System.out.println("Booking Failed (No Availability): " + r.getGuestName());
-            }
+    public void release(String roomType) {
+        inventory.put(roomType, inventory.get(roomType) + 1);
+    }
+
+    public void displayInventory() {
+        System.out.println("\nCurrent Inventory:");
+        for (Map.Entry<String, Integer> entry : inventory.entrySet()) {
+            System.out.println(entry.getKey() + " → " + entry.getValue());
         }
     }
 }
 
-public class UseCase6RoomAllocationService {
+// Booking Manager
+class BookingManager {
+
+    private Map<String, Reservation> bookings;
+
+    public BookingManager() {
+        bookings = new HashMap<>();
+    }
+
+    public void addBooking(Reservation res) {
+        bookings.put(res.getReservationId(), res);
+    }
+
+    public Reservation getBooking(String id) {
+        return bookings.get(id);
+    }
+
+    public void displayBookings() {
+        System.out.println("\n--- All Bookings ---");
+        for (Reservation r : bookings.values()) {
+            System.out.println(r);
+        }
+    }
+}
+
+// Cancellation Service (Core Logic)
+class CancellationService {
+
+    // Stack for rollback tracking (LIFO)
+    private Stack<String> rollbackStack;
+
+    public CancellationService() {
+        rollbackStack = new Stack<>();
+    }
+
+    public void cancelBooking(String reservationId,
+                              BookingManager bookingManager,
+                              InventoryManager inventoryManager) {
+
+        Reservation res = bookingManager.getBooking(reservationId);
+
+        // Validation
+        if (res == null) {
+            System.out.println("Cancellation Failed: Reservation not found.");
+            return;
+        }
+
+        if (res.isCancelled()) {
+            System.out.println("Cancellation Failed: Already cancelled.");
+            return;
+        }
+
+        // Step 1: Push to rollback stack
+        rollbackStack.push(res.getRoomType());
+
+        // Step 2: Restore inventory
+        inventoryManager.release(res.getRoomType());
+
+        // Step 3: Mark booking cancelled
+        res.cancel();
+
+        System.out.println("Cancellation successful for Reservation ID: " + reservationId);
+    }
+
+    public void showRollbackStack() {
+        System.out.println("\nRollback Stack (Recent Releases): " + rollbackStack);
+    }
+}
+
+// Main Class
+public class Book_my_stay {
+
     public static void main(String[] args) {
 
-        System.out.println("Welcome to Book My Stay - Hotel Booking System v6.0\n");
+        Scanner sc = new Scanner(System.in);
 
-        BookingQueue queue = new BookingQueue();
-        queue.addRequest(new Reservation("Alice", "Single Room"));
-        queue.addRequest(new Reservation("Bob", "Single Room"));
-        queue.addRequest(new Reservation("Charlie", "Single Room"));
-        queue.addRequest(new Reservation("David", "Suite Room"));
+        InventoryManager inventory = new InventoryManager();
+        BookingManager bookingManager = new BookingManager();
+        CancellationService cancellationService = new CancellationService();
 
-        RoomInventory inventory = new RoomInventory();
-        BookingService service = new BookingService(inventory);
+        while (true) {
+            System.out.println("\n--- Menu ---");
+            System.out.println("1. Create Booking");
+            System.out.println("2. Cancel Booking");
+            System.out.println("3. View Bookings");
+            System.out.println("4. View Inventory");
+            System.out.println("5. View Rollback Stack");
+            System.out.println("6. Exit");
 
-        service.process(queue);
+            System.out.print("Enter choice: ");
+            int choice = sc.nextInt();
+            sc.nextLine();
+
+            switch (choice) {
+
+                case 1:
+                    System.out.print("Enter Reservation ID: ");
+                    String id = sc.nextLine();
+
+                    System.out.print("Enter Guest Name: ");
+                    String name = sc.nextLine();
+
+                    System.out.print("Enter Room Type (Single/Double/Suite): ");
+                    String roomType = sc.nextLine();
+
+                    if (!inventory.isAvailable(roomType)) {
+                        System.out.println("Booking Failed: Room not available.");
+                        break;
+                    }
+
+                    inventory.allocate(roomType);
+                    Reservation res = new Reservation(id, name, roomType);
+                    bookingManager.addBooking(res);
+
+                    System.out.println("Booking successful!");
+                    break;
+
+                case 2:
+                    System.out.print("Enter Reservation ID to cancel: ");
+                    String cancelId = sc.nextLine();
+
+                    cancellationService.cancelBooking(cancelId, bookingManager, inventory);
+                    break;
+
+                case 3:
+                    bookingManager.displayBookings();
+                    break;
+
+                case 4:
+                    inventory.displayInventory();
+                    break;
+
+                case 5:
+                    cancellationService.showRollbackStack();
+                    break;
+
+                case 6:
+                    System.out.println("Exiting...");
+                    sc.close();
+                    return;
+
+                default:
+                    System.out.println("Invalid choice!");
+            }
+        }
     }
 }
