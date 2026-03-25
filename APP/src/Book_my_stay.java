@@ -40,12 +40,12 @@ class InventoryManager {
             inventory.put(roomType, available - 1);
 
             System.out.println("Booking SUCCESS for " + guestName +
-                    " → " + roomType +
-                    " | Remaining: " + (available - 1));
+                               " → " + roomType +
+                               " | Remaining: " + (available - 1));
             return true;
         } else {
             System.out.println("Booking FAILED for " + guestName +
-                    " → No " + roomType + " rooms available");
+                               " → No " + roomType + " rooms available");
             return false;
         }
     }
