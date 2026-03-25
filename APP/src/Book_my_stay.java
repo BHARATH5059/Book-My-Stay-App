@@ -33,9 +33,9 @@ class Reservation {
     @Override
     public String toString() {
         return "Reservation ID: " + reservationId +
-                ", Guest: " + guestName +
-                ", Room: " + roomType +
-                ", Price: ₹" + price;
+               ", Guest: " + guestName +
+               ", Room: " + roomType +
+               ", Price: ₹" + price;
     }
 }
 
@@ -89,8 +89,8 @@ class BookingReportService {
             totalRevenue += r.getPrice();
 
             roomTypeCount.put(
-                    r.getRoomType(),
-                    roomTypeCount.getOrDefault(r.getRoomType(), 0) + 1
+                r.getRoomType(),
+                roomTypeCount.getOrDefault(r.getRoomType(), 0) + 1
             );
         }
 
